@@ -86,6 +86,22 @@ services:
       - app-network
     restart: unless-stopped
 
+  #Nuxt3-app
+  nuxt:
+    image: yourusername/nuxt3-app
+    container_name: nuxt
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+    ports:
+      - '3000:3000'
+    networks:
+      - app-network
+    restart: always
+
 #Docker Networks
 networks:
   app-network:
