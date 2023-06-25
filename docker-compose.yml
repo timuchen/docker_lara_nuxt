@@ -1,0 +1,92 @@
+version: "3"
+services:
+  #PHP-service
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    image: php:8.2-fpm
+    container_name: php_store
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAG: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - app-network
+
+  #NGINX-service
+  webserver:
+    image: nginx:alpine
+    container_name: nginx_store
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - app-network
+
+  #MySQL-service
+  db:
+    image: mysql:8.0.32
+    container_name: db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "7706:3306"
+    environment:
+      MYSQL_DATABASE: obj_store
+      MYSQL_USER: obj_store
+      MYSQL_PASSWORD: obj_store
+      MYSQL_ROOT_PASSWORD: secret
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - ./docker/mysql/data/:/var/lib/mysql/
+      - ./docker/mysql/conf/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - app-network
+      -
+  #Meilisearch-service
+  meilisearch:
+    container_name: meilisearch
+    image: getmeili/meilisearch:v0.25.2
+    environment:
+      - http_proxy
+      - https_proxy
+      - MEILI_MASTER_KEY=${MEILI_MASTER_KEY:-masterKey}
+      - MEILI_NO_ANALYTICS=${MEILI_NO_ANALYTICS:-true}
+      - MEILI_ENV=${MEILI_ENV:-development}
+      - MEILI_LOG_LEVEL
+      - MEILI_DB_PATH=${MEILI_DB_PATH:-/data.ms}
+    ports:
+      - ${MEILI_PORT:-7700}:7700
+    networks:
+      - app-network
+    volumes:
+      - ./docker/meilisearch/data/data.ms:/data.ms
+    restart: unless-stopped
+
+  #Redis-service
+  redis:
+    container_name: redis
+    image: redis:6.2-alpine
+    volumes:
+      - redis:/data
+    ports:
+      - "6382:6379"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+#Docker Networks
+networks:
+  app-network:
+    driver: bridge

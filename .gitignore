@@ -1,0 +1,7 @@
+docker/mysql/data/
+docker/nginx/logs
+.log
+.lock
+.tmp
+Thumbs.db
+.DS_Store
